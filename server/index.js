@@ -15,15 +15,33 @@ const emergencyRoutes = require('./routes/emergencyRoutes');
 
 const app = express();
 
+// Build allowed origins list from env (supports comma-separated list)
+const rawOrigins = process.env.CLIENT_URL || '*';
+const allowedOrigins = rawOrigins === '*'
+  ? null
+  : rawOrigins.split(',').map((o) => o.trim());
+
 // Middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, Postman, mobile apps)
+      if (!origin) return callback(null, true);
+      // Allow all if wildcard
+      if (!allowedOrigins) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(morgan('dev'));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 200, // increased limit for production usage
 });
 app.use(limiter);
 

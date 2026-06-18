@@ -48,11 +48,32 @@ import AdminSettings from './pages/admin/AdminSettings';
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, profile, loading, initialized } = useAuthStore();
 
-  if (!initialized || loading) return <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><LoadingSpinner size="lg" /></div>;
+  // Show loading spinner until Firebase auth has initialized
+  if (!initialized || loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Not logged in → redirect to login
   if (!user) return <Navigate to="/login" replace />;
-  if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
+
+  // Profile is still being fetched — wait a moment before redirecting
+  if (!profile) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Wrong role → redirect to their dashboard
+  if (allowedRoles && !allowedRoles.includes(profile.role)) {
     return <Navigate to={`/${profile.role}`} replace />;
   }
+
   return children;
 };
 

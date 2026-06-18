@@ -18,9 +18,12 @@ const useAuthStore = create(
         const unsubscribe = onAuthChange(async (firebaseUser) => {
           if (firebaseUser) {
             try {
+              // Always re-fetch profile from Firestore on auth state change
+              // so we never serve stale role/data from localStorage
               const profile = await getUserProfile(firebaseUser.uid);
               set({ user: firebaseUser, profile, loading: false, initialized: true });
             } catch (err) {
+              console.error('Failed to fetch user profile:', err);
               set({ user: firebaseUser, profile: null, loading: false, initialized: true });
             }
           } else {
@@ -30,18 +33,29 @@ const useAuthStore = create(
         return unsubscribe;
       },
 
-      logout: () => set({ user: null, profile: null }),
+      logout: async () => {
+        set({ user: null, profile: null });
+      },
 
       refreshProfile: async () => {
         const { user } = get();
         if (!user) return;
-        const profile = await getUserProfile(user.uid);
-        set({ profile });
+        try {
+          const profile = await getUserProfile(user.uid);
+          set({ profile });
+        } catch (err) {
+          console.error('Failed to refresh profile:', err);
+        }
       },
     }),
     {
       name: 'medivault-auth',
-      partialize: (state) => ({ profile: state.profile }),
+      // Only persist the minimal role info — always verify from Firestore on init
+      partialize: (state) => ({
+        profile: state.profile
+          ? { role: state.profile.role, name: state.profile.name }
+          : null,
+      }),
     }
   )
 );

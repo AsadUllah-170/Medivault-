@@ -4,7 +4,7 @@ import { Users, UserCheck, Calendar, FileText, TrendingUp, Activity } from 'luci
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import { StatCard, PageHeader } from '../../components/shared/UIComponents';
 import { SkeletonStats } from '../../components/shared/SkeletonLoaders';
-import { getAdminStats, getAllPatients, getAllDoctors } from '../../services/adminService';
+import { getAdminStats, getAllPatients, getAllDoctorsAdmin } from '../../services/adminService';
 import { getAllAppointments } from '../../services/appointmentService';
 import { getAllRecords } from '../../services/recordService';
 import { format, subDays } from 'date-fns';

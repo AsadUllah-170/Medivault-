@@ -7,7 +7,6 @@ import {
   getDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -33,13 +32,19 @@ export const createRecord = async (doctorId, patientId, recordData) => {
 };
 
 export const getPatientRecords = async (patientId) => {
+  // Query by patientId only — sort client-side to avoid composite index requirement
   const q = query(
     collection(db, 'records'),
-    where('patientId', '==', patientId),
-    orderBy('createdAt', 'desc')
+    where('patientId', '==', patientId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort by createdAt descending
+  return results.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 };
 
 export const getRecord = async (recordId) => {
@@ -48,6 +53,12 @@ export const getRecord = async (recordId) => {
 };
 
 export const getAllRecords = async () => {
-  const snap = await getDocs(query(collection(db, 'records'), orderBy('createdAt', 'desc')));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const snap = await getDocs(collection(db, 'records'));
+  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort by createdAt descending
+  return results.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 };

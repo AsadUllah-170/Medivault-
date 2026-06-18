@@ -6,7 +6,6 @@ import {
   getDocs,
   updateDoc,
   doc,
-  orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -28,13 +27,19 @@ export const notifyUser = async (userId, { title, message, type, link }) => {
 };
 
 export const getUserNotifications = async (userId) => {
+  // Query by userId only, sort client-side to avoid composite index requirement
   const q = query(
     collection(db, 'notifications'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('userId', '==', userId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort by createdAt descending
+  return results.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 };
 
 export const markNotificationRead = async (notificationId) => {

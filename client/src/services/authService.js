@@ -57,7 +57,7 @@ export const registerUser = async ({ email, password, role, profileData }) => {
       specialization: profileData.specialization || '',
       licenseNumber: profileData.licenseNumber || '',
       hospitalAffiliation: profileData.hospitalAffiliation || '',
-      status: 'pending',
+      status: 'approved', // Auto-approved on registration; admin can suspend if needed
       availability: {
         days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
         slotDuration: 30,

@@ -178,12 +178,18 @@ const Appointments = () => {
       <Modal isOpen={showBook} onClose={() => setShowBook(false)} title="Book Appointment">
         <div className="space-y-0">
           <FormField label="Select Doctor" required>
-            <select value={form.doctorId} onChange={e => setForm(f => ({ ...f, doctorId: e.target.value }))} className="input-field">
-              <option value="">Choose a doctor...</option>
-              {doctors.map(d => (
-                <option key={d.id} value={d.id}>Dr. {d.name} — {d.specialization}</option>
-              ))}
-            </select>
+            {doctors.length === 0 ? (
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-400 text-sm rounded-xl border border-amber-200 dark:border-amber-800">
+                ⚠️ No doctors are currently available for booking. Please check back later.
+              </div>
+            ) : (
+              <select value={form.doctorId} onChange={e => setForm(f => ({ ...f, doctorId: e.target.value }))} className="input-field">
+                <option value="">Choose a doctor...</option>
+                {doctors.map(d => (
+                  <option key={d.id} value={d.id}>Dr. {d.name} — {d.specialization}</option>
+                ))}
+              </select>
+            )}
           </FormField>
           <FormField label="Preferred Date" required>
             <input type="date" min={today} value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="input-field" />

@@ -20,12 +20,13 @@ export const bookAppointment = async ({ patientId, doctorId, date, timeSlot, rea
     doctorId,
     date,
     timeSlot,
-    reason,
+    reason: reason || '',
     status: 'pending',
     notes: '',
     createdAt: serverTimestamp(),
   });
   await logAudit(patientId, 'APPOINTMENT_BOOKED', { appointmentId: ref.id, doctorId, date });
+  // Notify doctor of new appointment request
   await notifyUser(doctorId, {
     title: 'New Appointment Request',
     message: `A patient has requested an appointment on ${date} at ${timeSlot}.`,
@@ -36,23 +37,27 @@ export const bookAppointment = async ({ patientId, doctorId, date, timeSlot, rea
 };
 
 export const getPatientAppointments = async (patientId) => {
+  // Query by patientId only — no orderBy to avoid needing a composite index
   const q = query(
     collection(db, 'appointments'),
-    where('patientId', '==', patientId),
-    orderBy('date', 'asc')
+    where('patientId', '==', patientId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort client-side by date ascending
+  return results.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 };
 
 export const getDoctorAppointments = async (doctorId) => {
+  // Query by doctorId only — no orderBy to avoid needing a composite index
   const q = query(
     collection(db, 'appointments'),
-    where('doctorId', '==', doctorId),
-    orderBy('date', 'asc')
+    where('doctorId', '==', doctorId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort client-side by date ascending
+  return results.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 };
 
 export const updateAppointmentStatus = async (appointmentId, status, notes = '') => {
@@ -64,8 +69,10 @@ export const updateAppointmentStatus = async (appointmentId, status, notes = '')
 };
 
 export const getAllAppointments = async () => {
-  const snap = await getDocs(query(collection(db, 'appointments'), orderBy('date', 'desc')));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const snap = await getDocs(collection(db, 'appointments'));
+  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort client-side by date descending
+  return results.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 };
 
 export const getAppointment = async (id) => {

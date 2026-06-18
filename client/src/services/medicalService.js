@@ -7,7 +7,6 @@ import {
   updateDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -24,6 +23,7 @@ export const createPrescription = async (doctorId, patientId, data) => {
     createdAt: serverTimestamp(),
   });
   await logAudit(doctorId, 'PRESCRIPTION_CREATED', { prescriptionId: ref2.id, patientId });
+  // Notify the patient that a new prescription has been written for them
   await notifyUser(patientId, {
     title: 'New Prescription',
     message: 'Your doctor has written a new prescription for you.',
@@ -34,13 +34,19 @@ export const createPrescription = async (doctorId, patientId, data) => {
 };
 
 export const getPatientPrescriptions = async (patientId) => {
+  // Query by patientId only — sort client-side to avoid composite index
   const q = query(
     collection(db, 'prescriptions'),
-    where('patientId', '==', patientId),
-    orderBy('createdAt', 'desc')
+    where('patientId', '==', patientId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Sort by createdAt descending (most recent first)
+  return results.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 };
 
 export const uploadLabReport = async (doctorId, patientId, file, reportData) => {
@@ -67,13 +73,18 @@ export const uploadLabReport = async (doctorId, patientId, file, reportData) => 
 };
 
 export const getPatientLabReports = async (patientId) => {
+  // Query by patientId only — sort client-side
   const q = query(
     collection(db, 'labReports'),
-    where('patientId', '==', patientId),
-    orderBy('createdAt', 'desc')
+    where('patientId', '==', patientId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return results.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 };
 
 export const uploadImaging = async (patientId, doctorId, file, imagingData) => {
@@ -86,18 +97,30 @@ export const uploadImaging = async (patientId, doctorId, file, imagingData) => {
     patientId,
     doctorId,
     fileUrl,
+    fileName: file.name,
     createdAt: serverTimestamp(),
   });
   await logAudit(doctorId, 'IMAGING_UPLOADED', { imagingId: docRef.id, patientId });
+  await notifyUser(patientId, {
+    title: 'New Imaging Report',
+    message: `Your imaging report (${imagingData.type || 'Scan'}) is now available.`,
+    type: 'imaging',
+    link: '/patient/imaging',
+  });
   return docRef.id;
 };
 
 export const getPatientImaging = async (patientId) => {
+  // Query by patientId only — sort client-side
   const q = query(
     collection(db, 'imaging'),
-    where('patientId', '==', patientId),
-    orderBy('createdAt', 'desc')
+    where('patientId', '==', patientId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return results.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 };

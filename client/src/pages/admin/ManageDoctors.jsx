@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { PageHeader, StatusBadge, EmptyState, Modal } from '../../components/shared/UIComponents';
 import { SkeletonList } from '../../components/shared/SkeletonLoaders';
-import { getAllDoctors, updateDoctorStatus } from '../../services/adminService';
+import { getAllDoctorsAdmin, updateDoctorStatus } from '../../services/adminService';
 import toast from 'react-hot-toast';
 
 const ManageDoctors = () => {
@@ -12,7 +12,7 @@ const ManageDoctors = () => {
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    getAllDoctors().then(setDoctors).catch(console.error).finally(() => setLoading(false));
+    getAllDoctorsAdmin().then(setDoctors).catch(console.error).finally(() => setLoading(false));
   }, []);
 
   const handleStatus = async (id, status) => {
